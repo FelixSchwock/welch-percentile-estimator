@@ -43,7 +43,7 @@ def _sum_win(win, Ns, m, o):
     return abs(np.sum(win * win_s))**2
 
 # parts are from https://github.com/scipy/scipy/blob/v1.5.2/scipy/signal/spectral.py#L291-L454
-def welch_percentile(x, bias_func=bias_digamma_approx, fs=1.0, window='hann',
+def welch_percentile(x, bias_func, fs=1.0, window='hann',
                      nperseg=None, overlap=None, nfft=None, detrend='constant',
                      return_onesided=True, scaling='density', axis=-1,
                      percentile=0.5, numRV='edof', percentage_outliers=0.0):
@@ -58,9 +58,10 @@ def welch_percentile(x, bias_func=bias_digamma_approx, fs=1.0, window='hann',
     x : array
         signal in time domain
     bias_func : approximation used for the bias correction. All functions are
-        implemented below. Default is digamma approximation as this works well
-        for arbitrary percentiles and number of segments. Other functions can
-        give faster performance, however at the cost of lower accuracy.
+        implemented below. As a default bias_digamma_approx should be used as
+        it works well for arbitrary percentiles and number of segments. Other
+        functions can give faster performance, however at the cost of lower
+        accuracy.
     overlap : float
         percentage of overlap between adjacent segments
     percentile : float between 0 to 1
@@ -111,7 +112,7 @@ def welch_percentile(x, bias_func=bias_digamma_approx, fs=1.0, window='hann',
                                                                                 percentage_outliers)
                     elif numRV == 'edof':
                         win = signal.get_window(window, nperseg) / np.sqrt(np.sum(signal.get_window(window, nperseg)**2))
-                        edof = wp.compute_nu(len(x), nperseg, win, overlap)
+                        edof = compute_nu(len(x), nperseg, win, overlap)
                         Pxy = np.quantile(Pxy, percentile, axis=axis) / bias_func(edof / 2, percentile,
                                                                                     percentage_outliers)
                 else:
@@ -137,7 +138,7 @@ def bias_alternating_harmonic_series(Nb, p, percentage_outliers):
     gravitational waves from inspiraling compact binaries” (2012). The bias is
     only accurate for large Nb or odd numbers of Nb
     """
-    Nb = np.round(Nb) # Nb has to be an integer
+    Nb = int(np.round(Nb)) # Nb has to be an integer
     l = np.linspace(1, Nb, Nb)
     return np.sum((-1)**(l+1)/l)
 
@@ -146,7 +147,7 @@ def bias_truncated_harmonic_series(Nb, p, percentage_outliers):
     This formula is an improvement over the alternating harmonic series.
     """
     Nb = Nb * (1 - percentage_outliers)
-    Nb = np.round(Nb) # Nb has to be an integer
+    Nb = int(np.round(Nb)) # Nb has to be an integer
     p = p / (1 - percentage_outliers)
 
     percentiles = np.round(np.linspace(1/(Nb+1), 1 - 1/(Nb+1), Nb), 3)
